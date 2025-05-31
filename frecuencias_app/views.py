@@ -3,10 +3,9 @@ from .forms import CargaArchivoForm
 from .utils.procesamiento import leer_excel_columnas
 from .utils.frecuencia import generar_tabla_frecuencia
 from .utils.graficos import graficar_variable
-from .utils.estadisticas import procesar_variable_cuantitativa  # NUEVO
-
+from .utils.estadisticas import procesar_variable_cuantitativa
 import os
-
+from django.shortcuts import render, redirect
 def index(request):
     contexto = {}
     if request.method == 'POST':
@@ -17,43 +16,39 @@ def index(request):
             df, columnas = leer_excel_columnas(archivo)
             columna = request.POST.get('columna')
 
-            if columna:
-                serie = df[columna]
+            if not columna:
+                # Solo se subió el archivo, mostrar columnas
+                contexto = {
+                    'form': form,
+                    'columnas': columnas,
+                    'tipo_variable': tipo_variable,
+                    'mensaje': 'Selecciona una columna para continuar.',
+                }
+                return render(request, 'index.html', contexto)
 
-                if tipo_variable == 'cuantitativa-continua':
-                    output_dir = os.path.join('frecuencias_app', 'static', 'graficos')
-                    os.makedirs(output_dir, exist_ok=True)
+            # Ahora sí: procesar la columna elegida
+            serie = df[columna]
 
-                    resultado = procesar_variable_cuantitativa(df, columna, output_dir)
-
-                    if 'error' in resultado:
-                        contexto = {'form': form, 'columnas': columnas, 'mensaje': resultado['error']}
-                    else:
-                        contexto = {
-                            'form': form,
-                            'columnas': columnas,
-                            'columna_seleccionada': columna,
-                            'tabla': resultado["tabla_frecuencias"].to_html(classes='table'),
-                            'resumen': resultado["tabla_resultados"].to_html(classes='table table-bordered'),
-                            'grafico_histograma': '/static/graficos/' + resultado["graficos"]["histograma"],
-                            'grafico_poligono': '/static/graficos/' + resultado["graficos"]["poligono"],
-                            'grafico_ojiva': '/static/graficos/' + resultado["graficos"]["ojiva"],
-                            'tipo_variable': tipo_variable
-                        }
-                else:
-                    # Modo anterior para cualitativa y cuantitativa-discreta
-                    tabla = generar_tabla_frecuencia(serie, tipo_variable)
-                    grafico_url = graficar_variable(serie, tipo_variable, columna)
-                    contexto = {
-                        'form': form,
-                        'columnas': columnas,
-                        'columna_seleccionada': columna,
-                        'tabla': tabla.to_html(classes='table'),
-                        'grafico_url': grafico_url,
-                        'tipo_variable': tipo_variable
-                    }
+            if tipo_variable == 'cuantitativa-continua':
+                output_dir = os.path.join('frecuencias_app', 'static', 'graficos')
+                resultado = procesar_variable_cuantitativa(df, columna, output_dir)
+                contexto = {
+                    'tabla': resultado["tabla_frecuencias"].to_html(),
+                    'resumen': resultado["tabla_resultados"].to_html(),
+                    'grafico_histograma': '/static/graficos/' + resultado["graficos"]["histograma"],
+                    'grafico_poligono': '/static/graficos/' + resultado["graficos"]["poligono"],
+                    'grafico_ojiva': '/static/graficos/' + resultado["graficos"]["ojiva"]
+                }
+                return render(request, 'resultado.html', contexto)
             else:
-                contexto = {'form': form, 'columnas': columnas, 'mensaje': 'Selecciona una columna'}
+                # Modo cualitativo o discreto
+                tabla = generar_tabla_frecuencia(serie, tipo_variable)
+                grafico_url = graficar_variable(serie, tipo_variable, columna)
+                contexto = {
+                    'tabla': tabla.to_html(),
+                    'grafico_url': grafico_url
+                }
+                return render(request, 'resultado.html', contexto)
     else:
         form = CargaArchivoForm()
 

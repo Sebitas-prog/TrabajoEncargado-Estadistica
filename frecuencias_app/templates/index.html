@@ -95,6 +95,7 @@
       {% if columnas %}
         <label for="columna">Selecciona la columna a analizar:</label>
         <select name="columna" id="columna" class="select2" required>
+          <option value="" disabled selected>Elige una columna...</option>
           {% for col in columnas %}
             <option value="{{ col }}" {% if col == columna_seleccionada %}selected{% endif %}>{{ col }}</option>
           {% endfor %}
@@ -110,9 +111,10 @@
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   <script>
     $(document).ready(function() {
-      $('.select2').select2({
+      $('#columna').select2({
         placeholder: 'Elige una columna...',
-        allowClear: true
+        allowClear: true,
+        width: '100%'
       });
     });
   </script>
