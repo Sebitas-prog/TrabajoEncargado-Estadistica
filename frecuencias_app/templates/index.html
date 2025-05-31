@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Subir archivo Excel</title>
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
   <style>
     body {
       background-color: #f5f7fa;
@@ -61,25 +63,58 @@
     button:hover {
       background-color: #0056b3;
     }
+
+    .mensaje {
+      color: red;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Subir archivo Excel</h1>
+
+    {% if mensaje %}
+      <p class="mensaje">{{ mensaje }}</p>
+    {% endif %}
+
     <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
+
       <label for="archivo">Selecciona un archivo Excel:</label>
       <input type="file" name="archivo" id="archivo" required>
 
       <label for="tipo">Tipo de variable:</label>
-      <select name="tipo" id="tipo">
-        <option value="cualitativa">Cualitativa</option>
-        <option value="cuantitativa-discreta">Cuantitativa Discreta</option>
-        <option value="cuantitativa-continua">Cuantitativa Continua</option>
+      <select name="tipo_variable" id="tipo" required>
+        <option value="cualitativa" {% if tipo_variable == "cualitativa" %}selected{% endif %}>Cualitativa</option>
+        <option value="cuantitativa-discreta" {% if tipo_variable == "cuantitativa-discreta" %}selected{% endif %}>Cuantitativa Discreta</option>
+        <option value="cuantitativa-continua" {% if tipo_variable == "cuantitativa-continua" %}selected{% endif %}>Cuantitativa Continua</option>
       </select>
+
+      {% if columnas %}
+        <label for="columna">Selecciona la columna a analizar:</label>
+        <select name="columna" id="columna" class="select2" required>
+          {% for col in columnas %}
+            <option value="{{ col }}" {% if col == columna_seleccionada %}selected{% endif %}>{{ col }}</option>
+          {% endfor %}
+        </select>
+      {% endif %}
 
       <button type="submit">Procesar</button>
     </form>
   </div>
+
+  <!-- Select2 JS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      $('.select2').select2({
+        placeholder: 'Elige una columna...',
+        allowClear: true
+      });
+    });
+  </script>
 </body>
 </html>
